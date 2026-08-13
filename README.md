@@ -22,3 +22,35 @@ The environment is designed so that the web server can receive HTTP traffic from
 The architecture separates the public-facing web tier from the private database tier. Internet traffic is routed to the EC2 web server through the public subnet, while the RDS database remains isolated within private subnets across separate Availability Zones.
 
 ![AWS Staging VPC Architecture](Screenshots/aws-staging-vpc-architecture.png)
+
+--- 
+
+## Implementation
+
+### 1. VPC and Subnet Configuration
+
+Created a custom VPC named `Staging-VPC` using the CIDR block `10.0.0.0/24`.
+
+The VPC was segmented into one public subnet for the web tier and two private subnets for the database tier.
+
+| Subnet | CIDR | Availability Zone | Purpose |
+|---|---|---|---|
+| `Staging - Public` | `10.0.0.0/25` | `us-east-1f` | Hosts the public EC2 web server |
+| `Staging - Private - DB - A` | `10.0.0.128/26` | `us-east-1a` | Private RDS subnet |
+| `Staging - Private - DB - B` | `10.0.0.192/26` | `us-east-1b` | Secondary private RDS subnet |
+
+The two database subnets were placed in separate Availability Zones and later used together in the RDS DB subnet group.
+
+![Subnet Layout and Availability Zones](Screenshots/subnet-layout-and-availability-zones.png)
+
+---
+
+### 2. Internet Gateway and Routing
+
+Created an Internet Gateway and attached it to `Staging-VPC`.
+
+A staging route table was configured with a default route to the Internet Gateway:
+
+```text
+10.0.0.0/24  -> local
+0.0.0.0/0    -> Internet Gateway

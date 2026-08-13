@@ -198,7 +198,7 @@ SELECT * FROM connection_test;
 
 The main security concepts demonstrated in this phase were VPC design, subnet segmentation, controlled routing, least-privilege security groups, restricted administrative access, private database deployment, encrypted database storage, and end-to-end connectivity validation.
 
-The infrastructure phase is now complete. The next phase will add Amazon CloudWatch monitoring, log collection, alarms, and simulated security and operational events to improve visibility into the environment.
+The infrastructure phase is now complete. The next phase will be Amazon CloudWatch monitoring, log collection, alarms, and simulated security and operational events to improve visibility into the environment.
 
 ---
 

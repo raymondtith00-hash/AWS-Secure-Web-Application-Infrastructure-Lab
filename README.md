@@ -51,10 +51,6 @@ Created an Internet Gateway and attached it to `Staging-VPC`.
 
 A staging route table was configured with a default route to the Internet Gateway:
 
-```text
-10.0.0.0/24  -> local
-0.0.0.0/0    -> Internet Gateway
-
 ---
 
 ### 3. Web Server Security Group

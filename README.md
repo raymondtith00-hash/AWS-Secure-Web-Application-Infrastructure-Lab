@@ -192,3 +192,11 @@ INSERT INTO connection_test (message)
 VALUES ('EC2 successfully connected to private RDS');
 
 SELECT * FROM connection_test;
+```
+---
+
+The main security concepts you demonstrated were VPC design, subnet segmentation, controlled routing, least-privilege security groups, restricted administrative access, private database deployment, encrypted database storage, and end-to-end connectivity validation.
+
+The infrastructure phase is now complete. The next phase is adding CloudWatch monitoring, logs, alarms, and simulated security/operational events on top of this environment.
+
+---

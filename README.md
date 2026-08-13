@@ -194,9 +194,11 @@ VALUES ('EC2 successfully connected to private RDS');
 SELECT * FROM connection_test;
 ```
 ---
+### Infrastructure Phase Summary
 
-The main security concepts you demonstrated were VPC design, subnet segmentation, controlled routing, least-privilege security groups, restricted administrative access, private database deployment, encrypted database storage, and end-to-end connectivity validation.
+The main security concepts demonstrated in this phase were VPC design, subnet segmentation, controlled routing, least-privilege security groups, restricted administrative access, private database deployment, encrypted database storage, and end-to-end connectivity validation.
 
-The infrastructure phase is now complete. The next phase is adding CloudWatch monitoring, logs, alarms, and simulated security/operational events on top of this environment.
+The infrastructure phase is now complete. The next phase will add Amazon CloudWatch monitoring, log collection, alarms, and simulated security and operational events to improve visibility into the environment.
 
 ---
+

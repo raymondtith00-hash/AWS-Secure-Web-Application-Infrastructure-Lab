@@ -29,17 +29,19 @@ The architecture separates the public-facing web tier from the private database 
 
 ### 1. VPC and Subnet Configuration
 
-Created a custom VPC named `Staging-VPC` using the CIDR block `10.0.0.0/24`.
+I created a custom VPC named `Staging-VPC` using the CIDR block `10.0.0.0/24` to provide an isolated network for the environment.
 
-The VPC was segmented into one public subnet for the web tier and two private subnets for the database tier.
+Rather than placing every resource in the same subnet, I segmented the VPC into one public subnet for the web tier and two private subnets for the database tier. This separates Internet-facing resources from backend systems and reduces unnecessary exposure.
 
 | Subnet | CIDR | Availability Zone | Purpose |
 |---|---|---|---|
 | `Staging - Public` | `10.0.0.0/25` | `us-east-1f` | Hosts the public EC2 web server |
-| `Staging - Private - DB - A` | `10.0.0.128/26` | `us-east-1a` | Private RDS subnet |
-| `Staging - Private - DB - B` | `10.0.0.192/26` | `us-east-1b` | Secondary private RDS subnet |
+| `Staging - Private - DB - A` | `10.0.0.128/26` | `us-east-1a` | Private network space for RDS |
+| `Staging - Private - DB - B` | `10.0.0.192/26` | `us-east-1b` | Secondary private subnet for the RDS DB subnet group |
 
-The two database subnets were placed in separate Availability Zones and later used together in the RDS DB subnet group.
+The two database subnets were placed in separate Availability Zones so they could be used together in the RDS DB subnet group and support a more resilient database architecture.
+
+This subnet design creates a clear boundary between the public web tier and the private database tier.
 
 ![Subnet Layout and Availability Zones](Screenshots/subnet-layout-and-availability-zones.png)
 
@@ -47,9 +49,13 @@ The two database subnets were placed in separate Availability Zones and later us
 
 ### 2. Internet Gateway and Routing
 
-Created an Internet Gateway and attached it to `Staging-VPC`.
+After creating the subnet structure, I configured routing so that only the public subnet would have a direct path to the Internet.
 
-A staging route table was configured with a default route to the Internet Gateway:
+I created an Internet Gateway and attached it to `Staging-VPC`. I then created a dedicated route table with the following routes:
+
+
+10.0.0.0/24  -> local
+0.0.0.0/0    -> Internet Gateway
 
 ---
 

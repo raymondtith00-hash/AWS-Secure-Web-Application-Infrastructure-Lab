@@ -55,14 +55,16 @@ A staging route table was configured with a default route to the Internet Gatewa
 
 ### 3. Web Server Security Group
 
-Created `Staging - Web - SG` to control inbound access to the EC2 web server.
+I created a dedicated security group for the public web server so that only the traffic required by the application would be allowed into the instance.
+
+The web server needs to accept HTTP requests from the Internet, so TCP port `80` was opened to `0.0.0.0/0`. SSH access was also enabled for administration, but unlike HTTP, port `22` was restricted to my trusted public IP rather than exposed to the entire Internet.
 
 | Type | Protocol | Port | Source |
 |---|---|---:|---|
 | HTTP | TCP | 80 | `0.0.0.0/0` |
 | SSH | TCP | 22 | Trusted administrator IP |
 
-HTTP was allowed publicly so the web server could be reached from the Internet, while SSH access was restricted to a trusted source.
+This configuration allows the web server to remain publicly accessible while reducing unnecessary administrative exposure.
 
 ![Web Security Group](Screenshots/web-security-group.png)
 
@@ -70,22 +72,17 @@ HTTP was allowed publicly so the web server could be reached from the Internet, 
 
 ### 4. EC2 Web Server Deployment
 
-Deployed an Amazon Linux 2023 EC2 instance named `Staging-Web-Server` inside the public subnet.
+I deployed an Amazon Linux 2023 EC2 instance named `Staging-Web-Server` inside the public subnet.
 
-The instance was configured with:
-
-- `Staging - Public` subnet
-- `Staging - Web - SG`
-- Public IPv4 address
-- `t3.micro` instance type
+The instance was intentionally placed in `Staging - Public` because this subnet has a route to the Internet Gateway. A public IPv4 address was assigned so the server could receive external HTTP traffic, and `Staging - Web - SG` was attached to control which connections were permitted.
 
 ![EC2 Web Server Running](Screenshots/ec2-web-server-running.png)
 
-Apache HTTP Server was installed and enabled on the instance.
+After connecting to the instance over SSH, I installed Apache HTTP Server and configured the service to start automatically when the instance boots.
 
 ![Apache HTTPD Running](Screenshots/apache-httpd-running.png)
 
-The web server was then tested externally over HTTP.
+I then accessed the EC2 public IP from an external browser to verify that traffic could successfully travel through the Internet Gateway, public route table, subnet, security group, and finally reach the Apache service.
 
 ![HTTP Web Server Test](Screenshots/http-web-server-test.png)
 
@@ -93,13 +90,17 @@ The web server was then tested externally over HTTP.
 
 ### 5. Database Security Group
 
-Created `Staging - DB _ SG` to restrict access to the private database tier.
+The database tier required stricter access controls than the public web server.
+
+I created a separate database security group and allowed MySQL traffic on TCP port `3306`. Instead of allowing connections from an IP range such as `0.0.0.0/0`, I configured the source as `Staging - Web - SG`.
 
 | Type | Protocol | Port | Source |
 |---|---|---:|---|
 | MySQL/Aurora | TCP | 3306 | `Staging - Web - SG` |
 
-Instead of allowing MySQL access from the Internet, the rule references the web server security group. This allows database traffic only from approved resources in the web tier.
+Using a security group reference means that database access is based on the role of the source resource rather than its individual IP address. Only resources associated with the web server security group can initiate MySQL connections to the database.
+
+This keeps the database port unavailable to arbitrary Internet hosts while still allowing the application tier to communicate with it.
 
 ![Database Security Group](Screenshots/database-security-group.png)
 
@@ -107,14 +108,18 @@ Instead of allowing MySQL access from the Internet, the rule references the web 
 
 ### 6. RDS DB Subnet Group
 
-Created `staging-db-subnet-group` using both private database subnets.
+Amazon RDS uses a DB subnet group to determine which subnets are available for database placement.
+
+I created `staging-db-subnet-group` using the two private database subnets that were created earlier in the project.
 
 | Subnet | CIDR | Availability Zone |
 |---|---|---|
 | `Staging - Private - DB - A` | `10.0.0.128/26` | `us-east-1a` |
 | `Staging - Private - DB - B` | `10.0.0.192/26` | `us-east-1b` |
 
-The public subnet was intentionally excluded from the database subnet group.
+The subnets were intentionally placed in different Availability Zones. This provides RDS with a multi-AZ subnet layout and leaves the architecture ready for higher-availability deployment options if they are needed later.
+
+The public subnet was deliberately excluded so the database tier would remain separated from the Internet-facing portion of the environment.
 
 ![RDS DB Subnet Group](Screenshots/rds-db-subnet-group.png)
 
@@ -122,7 +127,9 @@ The public subnet was intentionally excluded from the database subnet group.
 
 ### 7. Private RDS MySQL Deployment
 
-Deployed an Amazon RDS MySQL database named `staging-mysql-db`.
+I deployed an Amazon RDS MySQL instance named `staging-mysql-db` as the backend database for the environment.
+
+Rather than running MySQL directly on another public-facing EC2 instance, RDS was used as a managed database service. The database was placed inside the private DB subnet group and configured without public accessibility.
 
 | Setting | Configuration |
 |---|---|
@@ -136,7 +143,9 @@ Deployed an Amazon RDS MySQL database named `staging-mysql-db`.
 | Security Group | `Staging - DB _ SG` |
 | Port | `3306` |
 
-The database was successfully provisioned and reached the `Available` state.
+The database security group allows connections only from the web server security group, while the subnet placement prevents the RDS instance from having a direct public network path.
+
+This creates a clear separation between the Internet-facing web tier and the protected database tier.
 
 ![RDS Database Available](Screenshots/rds-database-available.png)
 
@@ -144,11 +153,15 @@ The database was successfully provisioned and reached the `Available` state.
 
 ### 8. EC2-to-RDS Validation
 
-Connected from `Staging-Web-Server` to the private RDS MySQL instance over TCP port `3306`.
+After both tiers were deployed, I tested whether the security controls still allowed the communication required by the application.
+
+From `Staging-Web-Server`, I connected to the private RDS endpoint over MySQL port `3306`.
 
 ![EC2 to RDS Connection](Screenshots/ec2-rds-connection-test.png)
 
-A test database and table were created to confirm successful read and write access:
+A successful connection alone confirmed network reachability, but I also wanted to verify that the database could perform normal application operations.
+
+I created a test database and table, inserted a record, and queried the stored data:
 
 ```sql
 CREATE DATABASE staging_app;

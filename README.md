@@ -20,4 +20,5 @@ The environment is designed so that the web server can receive HTTP traffic from
 
 ## Architecture 
 The architecture separates the public-facing web tier from the private database tier. Internet traffic is routed to the EC2 web server through the public subnet, while the RDS database remains isolated within private subnets across separate Availability Zones.
+
 ![AWS Staging VPC Architecture](Screenshots/aws-staging-vpc-architecture.png)

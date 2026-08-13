@@ -5,3 +5,4 @@ This lab demonstrates how to build a secure AWS environment with a public EC2 we
 
 ## Architecture 
 
+![AWS Staging VPC Architecture](screenshots/aws-staging-vpc-architecture.png)

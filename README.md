@@ -49,13 +49,22 @@ This subnet design creates a clear boundary between the public web tier and the 
 
 ### 2. Internet Gateway and Routing
 
-After creating the subnet structure, I configured routing so that only the public subnet would have a direct path to the Internet.
+I configured the routing for `Staging-VPC` so that only the public subnet could communicate directly with the Internet.
 
-I created an Internet Gateway and attached it to `Staging-VPC`. I then created a dedicated route table with the following routes:
+First, I created an Internet Gateway and attached it to `Staging-VPC`. I then created a dedicated route table and added a default route that sends Internet-bound traffic through the gateway.
 
-
+```text
 10.0.0.0/24  -> local
 0.0.0.0/0    -> Internet Gateway
+```
+
+The `10.0.0.0/24` local route allows resources inside the VPC to communicate with one another. The `0.0.0.0/0` route provides a path to the Internet through the Internet Gateway.
+
+I associated this route table only with `Staging - Public`, where the EC2 web server is deployed. The private database subnets were intentionally left without a direct Internet Gateway route.
+
+This design allows the web server to receive public HTTP traffic while keeping the database tier isolated from direct Internet access.
+
+![Route Table and Internet Gateway](Screenshots/route-table-internet-gateway.png)
 
 ---
 

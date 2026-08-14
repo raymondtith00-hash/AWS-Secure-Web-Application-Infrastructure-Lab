@@ -4,7 +4,7 @@
 
 This lab demonstrates the deployment and security of a segmented AWS environment using a custom VPC, a public EC2 web server, and a private Amazon RDS MySQL database.
 
-The environment was designed to separate Internet-facing and backend resources using public and private subnets, controlled routing, and least-privilege security groups. The EC2 web server receives HTTP traffic from the Internet, while the RDS database remains isolated in private subnets and accepts MySQL connections only from the web tier.
+The environment was designed to separate Internet-facing and backend resources using public and private subnets, controlled routing, and least-privilege security groups. The EC2 web server receives HTTP traffic from the Internet, while the RDS database remains isolated in private subnets and accepts MySQL connections only from the EC2 web server layer.
 
 The lab also validates the architecture through external HTTP testing and successful EC2-to-RDS database communication, demonstrating secure connectivity between public and private resources.
 

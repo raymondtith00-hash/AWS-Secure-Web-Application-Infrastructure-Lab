@@ -1,4 +1,4 @@
-# AWS-Secure-Web-Application-Infrastructure-Lab
+# AWS Secure Web Application Infrastructure Lab
 
 ## Overview
 

@@ -22,6 +22,7 @@ The lab also validates the architecture through external HTTP testing and succes
 | Private Database | Amazon RDS MySQL | Hosts the database with no direct public Internet access |
 
 ## Architecture 
+
 The architecture separates the public-facing web tier from the private database tier. Internet traffic is routed to the EC2 web server through the public subnet, while the RDS database remains isolated within private subnets across separate Availability Zones.
 
 ![AWS Staging VPC Architecture](Screenshots/aws-staging-vpc-architecture.png)
@@ -52,9 +53,9 @@ This subnet design creates a clear boundary between the public web tier and the 
 
 ### 2. Internet Gateway and Routing
 
-I configured the routing for `Staging-VPC` so that only the public subnet could communicate directly with the Internet.
+Then I configured the routing for `Staging-VPC` so that only the public subnet could communicate directly with the Internet.
 
-First, I created an Internet Gateway and attached it to `Staging-VPC`. I then created a dedicated route table and added a default route that sends Internet-bound traffic through the gateway.
+The next step was to create an Internet Gateway and attach it to `Staging-VPC`, then make a dedicated route table and added a default route that sends Internet-bound traffic through the gateway.
 
 ```text
 10.0.0.0/24  -> local
@@ -73,7 +74,7 @@ This design allows the web server to receive public HTTP traffic while keeping t
 
 ### 3. Web Server Security Group
 
-I created a dedicated security group for the public web server so that only the traffic required by the application would be allowed into the instance.
+For the next phase it involved creating a dedicated security group for the public web server so that only the traffic required by the application would be allowed into the instance.
 
 The web server needs to accept HTTP requests from the Internet, so TCP port `80` was opened to `0.0.0.0/0`. SSH access was also enabled for administration, but unlike HTTP, port `22` was restricted to my trusted public IP rather than exposed to the entire Internet.
 
@@ -128,7 +129,7 @@ This keeps the database port unavailable to arbitrary Internet hosts while still
 
 Amazon RDS uses a DB subnet group to determine which subnets are available for database placement.
 
-I created `staging-db-subnet-group` using the two private database subnets that were created earlier in the project.
+I then made a `staging-db-subnet-group` using the two private database subnets that were created earlier in the project.
 
 | Subnet | CIDR | Availability Zone |
 |---|---|---|
@@ -145,7 +146,7 @@ The public subnet was deliberately excluded so the database tier would remain se
 
 ### 7. Private RDS MySQL Deployment
 
-I deployed an Amazon RDS MySQL instance named `staging-mysql-db` as the backend database for the environment.
+The next step was to deploy an Amazon RDS MySQL instance named `staging-mysql-db` as the backend database for the environment.
 
 Rather than running MySQL directly on another public-facing EC2 instance, RDS was used as a managed database service. The database was placed inside the private DB subnet group and configured without public accessibility.
 

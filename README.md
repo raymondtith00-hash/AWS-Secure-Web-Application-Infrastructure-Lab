@@ -1,9 +1,12 @@
 # AWS-Secure-Web-Application-Infrastructure-Lab
 
 ## Overview
-This project demonstrates the deployment of a segmented AWS environment using a custom VPC, public and private subnets, routing controls, security groups, an EC2 web server, and a private Amazon RDS database.
 
-The environment is designed so that the web server can receive HTTP traffic from the Internet while the database remains isolated from direct public access. Communication between the web and database tiers is restricted using security groups and least-privilege network rules.
+This lab demonstrates the deployment and security of a segmented AWS environment using a custom VPC, a public EC2 web server, and a private Amazon RDS MySQL database.
+
+The environment was designed to separate Internet-facing and backend resources using public and private subnets, controlled routing, and least-privilege security groups. The EC2 web server receives HTTP traffic from the Internet, while the RDS database remains isolated in private subnets and accepts MySQL connections only from the web tier.
+
+The lab also validates the architecture through external HTTP testing and successful EC2-to-RDS database communication, demonstrating secure connectivity between public and private resources.
 
 ## Infrastructure Components
 

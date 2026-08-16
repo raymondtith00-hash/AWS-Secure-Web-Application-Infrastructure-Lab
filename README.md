@@ -1,4 +1,4 @@
-# AAWS Secure Web Infrastructure and CloudWatch Monitoring Lab
+# AWS Secure Web Infrastructure and CloudWatch Monitoring Lab
 
 ## Overview
 

@@ -205,4 +205,16 @@ The main security concepts demonstrated in this phase were VPC design, subnet se
 The infrastructure phase is now complete. The next phase will be Amazon CloudWatch monitoring, log collection, alarms, and simulated security and operational events to improve visibility into the environment.
 
 ---
+#### 9.1 EC2 CPU Monitoring and Alarm
 
+I created a CloudWatch alarm to monitor CPU utilization on `Staging-Web-Server`.
+
+The alarm was configured to trigger when average CPU utilization exceeded 70% for one 5-minute evaluation period.
+
+To validate the alarm, I intentionally generated CPU load on the EC2 instance using two `yes` processes. This increased CPU utilization above the configured threshold and caused the CloudWatch alarm to enter the `ALARM` state.
+
+After confirming the alert, I terminated the test processes and allowed CPU utilization to return to normal.
+
+![CloudWatch High CPU Alarm](Screenshots/cloudwatch-high-cpu-alarm.png)
+
+This test confirmed that CloudWatch could detect abnormal resource utilization and generate an alert when the configured threshold was exceeded.

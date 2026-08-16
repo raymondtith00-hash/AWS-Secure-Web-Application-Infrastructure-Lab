@@ -308,3 +308,77 @@ HTTP4xxErrors Metric
      ↓
 CloudWatch Alarm
 ```
+#### 9.4 RDS Connection Monitoring
+
+To extend monitoring beyond the public web server, I also monitored the private RDS MySQL database using Amazon CloudWatch.
+
+I selected the `DatabaseConnections` metric for `staging-mysql-db` and created a CloudWatch alarm named `Staging-RDS-High-Connections`.
+
+The alarm was configured to trigger when the number of active database connections exceeded three during a 5-minute evaluation period.
+
+To validate the alarm, I opened multiple simultaneous MySQL sessions from `Staging-Web-Server` to the private RDS database. Each open session created an additional database connection.
+
+As the number of active connections increased, the `DatabaseConnections` metric rose above the configured threshold and caused the CloudWatch alarm to enter the `ALARM` state.
+
+![CloudWatch RDS High Connections Alarm](Screenshots/cloudwatch-rds-high-connections-alarm.png)
+
+This test confirmed that CloudWatch could monitor database activity and alert when connection volume exceeded the expected threshold.
+
+The monitoring flow was:
+
+```text
+Multiple EC2 MySQL Sessions
+          ↓
+Private RDS MySQL
+          ↓
+DatabaseConnections Metric
+          ↓
+Amazon CloudWatch
+          ↓
+High Connection Alarm
+```
+## 10. Security Controls Demonstrated
+
+| Security Control | What I Implemented | Why It Matters |
+|---|---|---|
+| Network Segmentation | Separated the environment into one public subnet and two private database subnets. | Reduces unnecessary exposure by keeping backend resources away from the public Internet. |
+| Controlled Internet Routing | Associated the Internet Gateway route only with the public subnet. | Ensures only Internet-facing resources have a direct path to the Internet. |
+| Restricted SSH Access | Allowed SSH on port `22` only from a trusted administrator IP. | Reduces the risk of unauthorized remote access and Internet-wide SSH scanning. |
+| Web Security Group | Allowed HTTP on port `80` to the public EC2 web server. | Permits required web traffic while limiting inbound access to necessary services. |
+| Database Security Group | Allowed MySQL on port `3306` only from `Staging - Web - SG`. | Prevents arbitrary systems from connecting directly to the database and limits access to the approved web tier. |
+| Private RDS Deployment | Deployed the MySQL database inside private subnets with public accessibility disabled. | Keeps sensitive backend data from being directly reachable from the Internet. |
+| RDS Storage Encryption | Enabled encryption on the RDS database. | Helps protect stored database data if the underlying storage is accessed without authorization. |
+| IAM Role for CloudWatch | Assigned the EC2 instance a role with `CloudWatchAgentServerPolicy`. | Allows the CloudWatch Agent to send logs without storing AWS access keys directly on the server. |
+| Least-Privilege Log Access | Used Linux ACLs to give the `cwagent` user only the permissions required to read Apache logs. | Avoids running the monitoring agent as root or making sensitive log directories broadly accessible. |
+| Centralized Log Collection | Sent Apache access and error logs to CloudWatch Logs. | Makes web activity easier to review, search, and investigate from a central location. |
+| High CPU Monitoring | Created an alarm for abnormal EC2 CPU utilization. | Can identify performance problems, runaway processes, or unexpected resource consumption. |
+| HTTP 4xx Detection | Created a metric filter and alarm for repeated HTTP `4xx` responses. | Helps identify unusual client activity such as repeated requests to nonexistent or restricted resources. |
+| RDS Connection Monitoring | Created an alarm for an unexpected increase in active database connections. | Provides visibility into unusual connection volume that could indicate application problems or unexpected database activity. | 
+
+--- 
+## 11. Validation Summary
+
+The environment was tested throughout the project to confirm that both the infrastructure and monitoring controls worked as intended.
+
+Validation included:
+
+- Confirming the Apache web server was reachable over HTTP
+- Confirming SSH administrative access to the EC2 instance
+- Successfully connecting from EC2 to the private RDS database
+- Performing database read and write operations
+- Triggering a high CPU CloudWatch alarm
+- Forwarding Apache access and error logs to CloudWatch Logs
+- Generating repeated HTTP 404 responses and triggering a 4xx alarm
+- Generating multiple simultaneous RDS connections and triggering a database connection alarm
+
+These tests confirmed that required communication remained functional while CloudWatch provided visibility into abnormal activity.
+
+---
+
+## 12. Key Takeaways
+
+This project demonstrated how to build a segmented AWS environment with security and monitoring built into the architecture.
+
+The public web server was separated from the private database tier, and communication between resources was limited to what was actually required. CloudWatch was then used to monitor EC2 performance, centralize Apache logs, detect repeated HTTP errors, and monitor RDS connection activity.
+
+The lab also reinforced the importance of validating security controls instead of only configuring them. Each major control was tested to confirm that normal communication still worked while unusual activity could be detected.

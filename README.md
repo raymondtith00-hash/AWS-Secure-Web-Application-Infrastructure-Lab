@@ -205,16 +205,106 @@ The main security concepts demonstrated in this phase were VPC design, subnet se
 The infrastructure phase is now complete. The next phase will be Amazon CloudWatch monitoring, log collection, alarms, and simulated security and operational events to improve visibility into the environment.
 
 ---
-#### 9.1 EC2 CPU Monitoring and Alarm
+### 9. CloudWatch Monitoring and Detection
 
-I created a CloudWatch alarm to monitor CPU utilization on `Staging-Web-Server`.
+After completing and validating the AWS infrastructure, I added Amazon CloudWatch to improve visibility into the environment and detect abnormal activity on the public EC2 web server.
 
-The alarm was configured to trigger when average CPU utilization exceeded 70% for one 5-minute evaluation period.
+The goal of this phase was to monitor system performance, centralize Apache web server logs, and create alerts based on both resource usage and suspicious web activity.
 
-To validate the alarm, I intentionally generated CPU load on the EC2 instance using two `yes` processes. This increased CPU utilization above the configured threshold and caused the CloudWatch alarm to enter the `ALARM` state.
+#### 9.1 EC2 CPU Monitoring
 
-After confirming the alert, I terminated the test processes and allowed CPU utilization to return to normal.
+I created a CloudWatch alarm named `Staging-Web-High-CPU` to monitor CPU utilization on `Staging-Web-Server`.
+
+The alarm was configured to trigger when average CPU utilization exceeded 70% during a 5-minute evaluation period.
+
+To validate the alarm, I intentionally generated CPU load on both vCPUs of the EC2 instance using two `yes` processes. This pushed CPU utilization above the configured threshold.
+
+CloudWatch detected the increase and moved the alarm into the `ALARM` state.
+
+After confirming the alert, I stopped the test processes and verified that CPU usage returned to normal.
 
 ![CloudWatch High CPU Alarm](Screenshots/cloudwatch-high-cpu-alarm.png)
 
-This test confirmed that CloudWatch could detect abnormal resource utilization and generate an alert when the configured threshold was exceeded.
+This test confirmed that CloudWatch could detect abnormal resource utilization on the EC2 instance and trigger an alert when the configured threshold was exceeded.
+
+---
+
+#### 9.2 Apache Log Collection
+
+I installed the Amazon CloudWatch Agent on `Staging-Web-Server` so Apache logs could be collected and centralized in CloudWatch Logs.
+
+The EC2 instance was assigned an IAM role containing the `CloudWatchAgentServerPolicy`, allowing the CloudWatch Agent to send log data to AWS.
+
+The agent was configured to monitor:
+
+- `/var/log/httpd/access_log`
+- `/var/log/httpd/error_log`
+
+The logs were forwarded to:
+
+- `/staging/apache/access`
+- `/staging/apache/error`
+
+The CloudWatch Agent was configured to run as the `cwagent` user. During testing, the agent initially could not access the Apache log directory because `/var/log/httpd` was restricted to the root user.
+
+I identified the permissions issue and used Linux ACLs to grant the `cwagent` account only the access required to read the Apache logs instead of broadly opening the directory permissions.
+
+After restarting the CloudWatch Agent, both Apache log groups were successfully created and log events began appearing in CloudWatch.
+
+![CloudWatch Apache Access Logs](Screenshots/cloudwatch-apache-access-logs.png)
+
+The centralized logs provided visibility into information such as source IP addresses, HTTP request methods, requested resources, response status codes, and user-agent information.
+
+---
+
+#### 9.3 HTTP 4xx Detection
+
+After confirming that Apache access logs were successfully reaching CloudWatch, I created a metric filter to identify HTTP 4xx responses.
+
+The metric filter searched Apache access logs for client-error status codes including:
+
+- `400 Bad Request`
+- `403 Forbidden`
+- `404 Not Found`
+
+Each matching log event incremented a custom CloudWatch metric named `HTTP4xxErrors`.
+
+I then created a CloudWatch alarm named `Staging-Web-High-4xx`.
+
+The alarm was configured to trigger when more than five HTTP 4xx responses occurred during a 5-minute period.
+
+To validate the detection, I intentionally requested several nonexistent paths from the Apache web server, including paths such as:
+
+- `/admin`
+- `/fake-login`
+- `/password`
+- `/client`
+- `/not-real`
+
+These requests generated repeated `404` responses, which appeared in the Apache access logs and were forwarded to CloudWatch.
+
+![Apache 404 Log Events](Screenshots/cloudwatch-apache-404-log-events.png)
+
+The metric filter counted the matching 4xx events and caused the `Staging-Web-High-4xx` alarm to enter the `ALARM` state after the configured threshold was exceeded.
+
+![CloudWatch High 4xx Alarm](Screenshots/cloudwatch-high-4xx-alarm.png)
+
+This demonstrated a complete log-based detection workflow:
+
+```text
+HTTP Request
+     ↓
+Apache Web Server
+     ↓
+Apache Access Log
+     ↓
+CloudWatch Agent
+     ↓
+CloudWatch Logs
+     ↓
+4xx Metric Filter
+     ↓
+HTTP4xxErrors Metric
+     ↓
+CloudWatch Alarm
+```
